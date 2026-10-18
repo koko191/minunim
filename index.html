@@ -101,6 +101,7 @@ h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:0;}
       <div class="warn" role="note"><span class="bolt" aria-hidden="true"><svg viewBox="0 0 48 48" width="44" height="44"><polygon points="28,4 13,26.4 23,26.4 18,44 36,20.4 25.6,20.4 33,4" fill="#ff3b4a" stroke="#5c000c" stroke-width="2.5" stroke-linejoin="round"/><polygon points="28,6.8 18,24 20.8,24 30,6.8" fill="#ffffff55"/></svg></span><div><b>להיזהר מפרכוסים!</b> ברק אדום מוריד 15 מ"ג ולב.<br><b>שלושה פרכוסים = פסילה.</b></div></div>
       <button class="go" id="startBtn">יאללה כדורים</button>
       <button class="ghost" data-board>🏆 טבלת שיאים</button>
+      <div class="hint" id="meLine"></div>
       <div class="hint">עם סאונד 🔊</div>
     </div>
   </div>
@@ -272,15 +273,22 @@ function end(){S.run=false;SND.over();const nb=S.score>best;if(nb){best=S.score;
   $('overTitle').textContent=nb?'שיא חדש!':'נגמר הסבב';
   const s=S.score;$('overMsg').textContent=nb&&s>0?'הרוקחת כבר מכירה אותך בשם.':s<200?'שלושה פרכוסים. מחר מתחילים מחדש.':s<600?'מנה יפה. אל תשכח לשתות מים.':s<1000?'האחות אומרת שאתה מטופל מצטיין.':s<2000?'מינון מכובד. הרוקחת מתחילה לחשוד.':'אתה כבר יותר בית מרקחת מבן אדם.';
   pendingScore=S.score;savedIdx=-1;
-  $('saveWrap').hidden=!(S.score>0);$('saveRow').hidden=false;
-  $('nameIn').value=LB.name||'';checkName();
-  $('hud').hidden=true;$('over').hidden=false;}
+  $('saveWrap').hidden=!(S.score>0);
+  $('hud').hidden=true;$('over').hidden=false;
+  if(S.score>0)afterRound();}
 
 // ---- leaderboard: shared online table (Supabase), with this phone's copy as a fallback ----
+// Each phone picks its name once; the database ties that name to this phone's secret id.
 const SB_URL='https://opqkavbzrongrfbtuwfz.supabase.co', SB_KEY='sb_publishable_D_VlWkqkC-qCQ_makZusfA_KHtIcbG4';
+const MAX_SCORE=10000;
 const LB={board:[],name:''};
 try{Object.assign(LB,JSON.parse(localStorage.getItem('mgBoard')||'{}'))}catch(e){}
 function saveLB(){try{localStorage.setItem('mgBoard',JSON.stringify(LB))}catch(e){}}
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+let DEV=store.get('mgDev');
+if(!DEV){const a=new Uint8Array(16);(crypto.getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256));DEV=[...a].map(x=>x.toString(16).padStart(2,'0')).join('');store.set('mgDev',DEV);}
+let MYNAME=store.get('mgName')||'';
+let myBest=+store.get('mgMyBest')||0;
 let pendingScore=0,savedIdx=-1,boardBack='start',online=null,loading=null;
 const norm=n=>n.trim().toLowerCase();
 function bestPerName(rows){const m=new Map();for(const r of rows){const k=norm(r.n);if(!m.has(k)||m.get(k).s<r.s)m.set(k,r);}return[...m.values()].sort((a,b)=>b.s-a.s);}
@@ -289,28 +297,46 @@ function loadOnline(){
     .then(r=>r.ok?r.json():Promise.reject(r.status)).then(rows=>{online=bestPerName(rows.map(r=>({n:r.name,s:r.score})));return online;})
     .catch(()=>{online=null;return null;}).finally(()=>{loading=null;});
   return loading;}
-function postOnline(n,s){return fetch(SB_URL+'/rest/v1/scores',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({name:n,score:Math.round(s)})}).then(r=>r.ok);}
+// resolves 'ok' | 'taken' | 'fail'
+async function postOnline(n,s){
+  try{const r=await fetch(SB_URL+'/rest/v1/scores',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({name:n,score:Math.min(MAX_SCORE,Math.round(s)),device_id:DEV})});
+    if(r.ok)return'ok';const t=await r.text();return t.includes('name_taken')?'taken':'fail';}catch(e){return'fail';}}
 loadOnline();
 function board(){return online||LB.board;}
-function findRec(n){n=norm(n);return board().find(r=>norm(r.n)===n);}
+function showMe(){$('meLine').textContent=MYNAME?'משחק בתור '+MYNAME+(myBest?' · השיא שלך '+fmt(myBest):''):'';}
+function rememberLocal(n,s){let rec=LB.board.find(r=>norm(r.n)===norm(n));
+  if(rec){if(s>rec.s){rec.s=s;rec.d=Date.now();}}else LB.board.push({n,s,d:Date.now()});
+  LB.board.sort((a,b)=>b.s-a.s);LB.board=LB.board.slice(0,10);saveLB();}
+async function placeLine(n,s){await loadOnline();const list=board();savedIdx=list.findIndex(r=>norm(r.n)===norm(n)&&r.s===s);
+  return savedIdx>=0&&savedIdx<10?' מקום '+(savedIdx+1)+' בטבלה 🏆':' עוד לא בטופ 10';}
+// end of a round: first time asks for the permanent name; afterwards saves personal bests automatically
+async function afterRound(){
+  const s=pendingScore;
+  if(!MYNAME){$('saveRow').hidden=false;$('nameIn').value=LB.name||'';checkName();return;}
+  $('saveRow').hidden=true;
+  if(s<=myBest){$('saveTitle').textContent='השיא של '+MYNAME+' הוא '+fmt(myBest)+'. לא עברת אותו הפעם';pendingScore=0;return;}
+  $('saveTitle').textContent='שיא אישי חדש! שומר...';pendingScore=0;
+  const res=await postOnline(MYNAME,s);
+  if(res==='taken'){MYNAME='';store.set('mgName','');pendingScore=s;$('saveRow').hidden=false;$('nameIn').value='';$('saveBtn').disabled=true;$('saveTitle').textContent='השם שבחרת נתפס בינתיים על ידי שחקן אחר. בחר שם חדש';showMe();return;}
+  if(res==='ok'){myBest=s;store.set('mgMyBest',s);rememberLocal(MYNAME,s);$('saveTitle').textContent='שיא אישי חדש ל'+MYNAME+'! נשמר.'+await placeLine(MYNAME,s);SND.rx();}
+  else{rememberLocal(MYNAME,s);$('saveTitle').textContent='אין חיבור לטבלה כרגע. השיא נשמר רק בפלאפון הזה';}
+  showMe();
+}
 function checkName(){
   if($('saveRow').hidden)return;
-  const n=($('nameIn').value||'').trim(),rec=n&&findRec(n),btn=$('saveBtn');
-  if(rec&&pendingScore<=rec.s){btn.disabled=true;$('saveTitle').textContent='השיא של '+rec.n+' הוא '+fmt(rec.s)+'. לא עברת אותו הפעם';}
-  else{btn.disabled=!n;$('saveTitle').textContent=rec?'שיא חדש ל'+rec.n+'! לשמור?':'איך קוראים לך?';}
+  const n=($('nameIn').value||'').trim();
+  $('saveBtn').disabled=!n;
+  $('saveTitle').textContent='בחר שם לטבלת השיאים. זה יהיה השם הקבוע שלך, ואי אפשר לשנות אותו אחר כך';
 }
 async function saveScore(){
   const n=($('nameIn').value||'').trim().slice(0,14);if(!n||!pendingScore)return;
-  const s=pendingScore;pendingScore=0;LB.name=n;
-  let rec=LB.board.find(r=>norm(r.n)===norm(n));
-  if(rec){if(s>rec.s){rec.s=s;rec.d=Date.now();}}else LB.board.push({n,s,d:Date.now()});
-  LB.board.sort((a,b)=>b.s-a.s);LB.board=LB.board.slice(0,10);saveLB();
-  $('saveRow').hidden=true;$('saveTitle').textContent='שומר...';
-  const ok=await postOnline(n,s).catch(()=>false);
-  await loadOnline();
-  const list=board();savedIdx=list.findIndex(r=>norm(r.n)===norm(n)&&r.s===s);
-  $('saveTitle').textContent=!ok?'נשמר רק בפלאפון הזה. אין חיבור לטבלה המשותפת כרגע':savedIdx<0||savedIdx>=10?'נשמר בטבלה המשותפת. עוד לא בטופ 10':'נשמר! מקום '+(savedIdx+1)+' בטבלה המשותפת 🏆';
-  SND.rx();
+  const s=pendingScore;$('saveBtn').disabled=true;$('saveTitle').textContent='שומר...';
+  const res=await postOnline(n,s);
+  if(res==='taken'){$('saveBtn').disabled=false;$('saveTitle').textContent='השם "'+n+'" כבר תפוס על ידי שחקן אחר. בחר שם אחר';$('nameIn').focus();return;}
+  pendingScore=0;MYNAME=n;store.set('mgName',n);LB.name=n;rememberLocal(n,s);$('saveRow').hidden=true;
+  if(res==='ok'){myBest=s;store.set('mgMyBest',s);$('saveTitle').textContent='נעים להכיר, '+n+'! זה השם הקבוע שלך.'+await placeLine(n,s);SND.rx();}
+  else $('saveTitle').textContent='השם '+n+' נשמר בפלאפון. אין חיבור לטבלה כרגע, השיא הבא שלך יישלח אליה';
+  showMe();
 }
 async function renderBoard(){
   const ol=$('lbList');ol.textContent='';
@@ -335,9 +361,9 @@ function togglePause(){if(!S.run)return;S.paused=!S.paused;$('pause').textConten
 $('pause').onclick=togglePause;
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.run&&!S.paused)togglePause()});
 function begin(){initAudio();
-  if(!$('saveWrap').hidden&&!$('saveRow').hidden&&pendingScore>0&&!$('saveBtn').disabled)saveScore();
+
   $('start').hidden=true;$('over').hidden=true;$('board').hidden=true;$('hud').hidden=false;reset();}
-$('startBtn').onclick=begin;$('againBtn').onclick=begin;
+$('startBtn').onclick=begin;$('againBtn').onclick=begin;showMe();
 
 // ---- drawing ----
 function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
