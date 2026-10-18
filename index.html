@@ -126,7 +126,7 @@ h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:0;}
     <div class="card">
       <h2>טבלת השיאים</h2>
       <ol class="lb" id="lbList"></ol>
-      <div class="hint">הטבלה נשמרת בפלאפון הזה. כל מי שמשחק במכשיר הזה נכנס אליה.</div>
+      <div class="hint" id="lbHint">טבלה משותפת לכל מי שמשחק במינונים.</div>
       <button class="go" id="boardBack">חזרה</button>
     </div>
   </div>
@@ -276,33 +276,50 @@ function end(){S.run=false;SND.over();const nb=S.score>best;if(nb){best=S.score;
   $('nameIn').value=LB.name||'';checkName();
   $('hud').hidden=true;$('over').hidden=false;}
 
-// ---- leaderboard (this device) ----
+// ---- leaderboard: shared online table (Supabase), with this phone's copy as a fallback ----
+const SB_URL='https://opqkavbzrongrfbtuwfz.supabase.co', SB_KEY='sb_publishable_D_VlWkqkC-qCQ_makZusfA_KHtIcbG4';
 const LB={board:[],name:''};
 try{Object.assign(LB,JSON.parse(localStorage.getItem('mgBoard')||'{}'))}catch(e){}
 function saveLB(){try{localStorage.setItem('mgBoard',JSON.stringify(LB))}catch(e){}}
-let pendingScore=0,savedIdx=-1,boardBack='start';
-function findRec(n){n=n.trim().toLowerCase();return LB.board.find(r=>r.n.trim().toLowerCase()===n);}
+let pendingScore=0,savedIdx=-1,boardBack='start',online=null,loading=null;
+const norm=n=>n.trim().toLowerCase();
+function bestPerName(rows){const m=new Map();for(const r of rows){const k=norm(r.n);if(!m.has(k)||m.get(k).s<r.s)m.set(k,r);}return[...m.values()].sort((a,b)=>b.s-a.s);}
+function loadOnline(){
+  loading=fetch(SB_URL+'/rest/v1/scores?select=name,score&order=score.desc&limit=500',{headers:{apikey:SB_KEY}})
+    .then(r=>r.ok?r.json():Promise.reject(r.status)).then(rows=>{online=bestPerName(rows.map(r=>({n:r.name,s:r.score})));return online;})
+    .catch(()=>{online=null;return null;}).finally(()=>{loading=null;});
+  return loading;}
+function postOnline(n,s){return fetch(SB_URL+'/rest/v1/scores',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({name:n,score:Math.round(s)})}).then(r=>r.ok);}
+loadOnline();
+function board(){return online||LB.board;}
+function findRec(n){n=norm(n);return board().find(r=>norm(r.n)===n);}
 function checkName(){
   if($('saveRow').hidden)return;
   const n=($('nameIn').value||'').trim(),rec=n&&findRec(n),btn=$('saveBtn');
   if(rec&&pendingScore<=rec.s){btn.disabled=true;$('saveTitle').textContent='השיא של '+rec.n+' הוא '+fmt(rec.s)+'. לא עברת אותו הפעם';}
   else{btn.disabled=!n;$('saveTitle').textContent=rec?'שיא חדש ל'+rec.n+'! לשמור?':'איך קוראים לך?';}
 }
-function saveScore(){
-  const n=($('nameIn').value||'').trim().slice(0,14);if(!n)return;
-  LB.name=n;let rec=findRec(n);
-  if(rec){if(pendingScore<=rec.s)return;rec.s=pendingScore;rec.d=Date.now();}
-  else{rec={n,s:pendingScore,d:Date.now()};LB.board.push(rec);}
-  LB.board.sort((a,b)=>b.s-a.s);LB.board=LB.board.slice(0,10);
-  savedIdx=LB.board.indexOf(rec);saveLB();pendingScore=0;
-  $('saveRow').hidden=true;
-  $('saveTitle').textContent=savedIdx<0?'נשמר. עוד לא בטופ 10':'נשמר! מקום '+(savedIdx+1)+' בטבלה 🏆';
+async function saveScore(){
+  const n=($('nameIn').value||'').trim().slice(0,14);if(!n||!pendingScore)return;
+  const s=pendingScore;pendingScore=0;LB.name=n;
+  let rec=LB.board.find(r=>norm(r.n)===norm(n));
+  if(rec){if(s>rec.s){rec.s=s;rec.d=Date.now();}}else LB.board.push({n,s,d:Date.now()});
+  LB.board.sort((a,b)=>b.s-a.s);LB.board=LB.board.slice(0,10);saveLB();
+  $('saveRow').hidden=true;$('saveTitle').textContent='שומר...';
+  const ok=await postOnline(n,s).catch(()=>false);
+  await loadOnline();
+  const list=board();savedIdx=list.findIndex(r=>norm(r.n)===norm(n)&&r.s===s);
+  $('saveTitle').textContent=!ok?'נשמר רק בפלאפון הזה. אין חיבור לטבלה המשותפת כרגע':savedIdx<0||savedIdx>=10?'נשמר בטבלה המשותפת. עוד לא בטופ 10':'נשמר! מקום '+(savedIdx+1)+' בטבלה המשותפת 🏆';
   SND.rx();
 }
-function renderBoard(){
+async function renderBoard(){
   const ol=$('lbList');ol.textContent='';
-  if(!LB.board.length){const d=document.createElement('div');d.className='empty';d.textContent='עוד אין שיאים. שחק סבב ותהיה הראשון בטבלה.';ol.append(d);return}
-  LB.board.forEach((r,i)=>{const li=document.createElement('li');if(i===savedIdx)li.className='me';
+  const msg=t=>{const d=document.createElement('div');d.className='empty';d.textContent=t;ol.append(d);};
+  if(!online){msg('טוען את הטבלה...');await(loading||loadOnline());ol.textContent='';}
+  $('lbHint').textContent=online?'טבלה משותפת לכל מי שמשחק במינונים. שם אחד = השיא הכי טוב שלו.':'אין חיבור לטבלה המשותפת כרגע. אלה השיאים בפלאפון הזה.';
+  const list=board().slice(0,10);
+  if(!list.length){msg('עוד אין שיאים. שחק סבב ותהיה הראשון בטבלה.');return}
+  list.forEach((r,i)=>{const li=document.createElement('li');if(i===savedIdx)li.className='me';
     const nm=document.createElement('span');nm.className='nm';nm.textContent=r.n;
     const sc=document.createElement('span');sc.className='sc';sc.textContent=fmt(r.s);
     li.append(nm,sc);ol.append(li);});
@@ -311,7 +328,7 @@ $('nameIn').addEventListener('input',checkName);
 $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();if(!$('saveBtn').disabled)saveScore()}});
 $('saveBtn').onclick=()=>{if(!$('saveBtn').disabled)saveScore();};
 document.querySelectorAll('[data-board]').forEach(b=>b.onclick=()=>{boardBack=$('over').hidden?'start':'over';
-  renderBoard();$('start').hidden=true;$('over').hidden=true;$('board').hidden=false;});
+  $('start').hidden=true;$('over').hidden=true;$('board').hidden=false;renderBoard();});
 $('boardBack').onclick=()=>{$('board').hidden=true;$(boardBack).hidden=false;};
 
 function togglePause(){if(!S.run)return;S.paused=!S.paused;$('pause').textContent=S.paused?'▶':'II';last=performance.now();}
