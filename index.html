@@ -1,6 +1,6 @@
 <!doctype html><html lang="he"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="משחק טלפון: לבלוע כמה שיותר כדורים ולהיזהר מפרכוסים.">
-<meta property="og:title" content="מינונים"><meta property="og:description" content="לבלוע כמה שיותר כדורים. שלושה פרכוסים = פסילה."><meta property="og:type" content="website">
+<meta name="description" content="תבלע כמה שיותר כדורים, תיזהר מפרכוסים.">
+<meta property="og:title" content="מינונים"><meta property="og:description" content="תבלע כמה שיותר כדורים, תיזהר מפרכוסים."><meta property="og:type" content="website">
 <meta name="theme-color" content="#0e1d33">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>מינונים</title>
@@ -21,10 +21,14 @@ body{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-hig
 #wrap{position:fixed;inset:0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;}
 canvas{display:block;width:100%;flex:1;min-height:0;}
 #hud{position:absolute;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;direction:rtl;}
-.score{font-family:var(--display);font-size:2rem;line-height:1;color:var(--teal);font-variant-numeric:tabular-nums;text-shadow:0 2px 0 #0008;}
-.sub{font-size:.75rem;color:var(--muted);letter-spacing:.04em;margin-top:4px;text-shadow:0 1px 0 #0008;}
-.lives{font-size:1.4rem;letter-spacing:2px;}
-#pause,#mute{pointer-events:auto;background:#ffffff14;border:1px solid #ffffff26;color:var(--ink);border-radius:10px;width:40px;height:40px;font-size:1rem;cursor:pointer;}
+.score{font-family:var(--display);font-size:2rem;line-height:40px;height:40px;color:var(--teal);font-variant-numeric:tabular-nums;text-shadow:0 2px 0 #0008;}
+.sub{font-size:.75rem;color:var(--muted);letter-spacing:.04em;margin-top:0;text-shadow:0 1px 0 #0008;}
+.lives{font-size:1.4rem;letter-spacing:2px;height:40px;display:flex;align-items:center;}
+.lives span{filter:drop-shadow(0 1px 2px #000c);}
+.lives .lost{opacity:.45;}
+#pause,#mute{display:grid;place-items:center;}
+#pause,#mute{pointer-events:auto;background:#0b162680;border:1.5px solid #ffffff59;color:#fff;box-shadow:0 2px 6px #0006;border-radius:10px;width:40px;height:40px;font-size:1rem;cursor:pointer;}
+#pauseMenu{background:#08111fcc;}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(180deg,#0e1d33ee,#08111ff2);direction:rtl;}
 .card{max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;max-height:100%;overflow:auto;padding:4px 4px 12px;box-sizing:border-box;}
 h1{font-family:var(--body);font-weight:800;font-size:3.3rem;margin:0;line-height:1.05;text-wrap:balance;background:linear-gradient(180deg,#a8ffef 0%,#4fe3c6 55%,#22b89c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #0b5e50) drop-shadow(0 0 14px #3fe0c255);}
@@ -45,6 +49,11 @@ h1{font-family:var(--body);font-weight:800;font-size:3.3rem;margin:0;line-height
 .rxrow .chip{width:38px;height:38px;font-size:1.15rem;background:#fff!important;box-shadow:0 2px 6px #0006;}
 .warn{display:flex;gap:12px;align-items:center;text-align:right;background:linear-gradient(180deg,#3d1420,#2c0e17);border:2px solid #ff4d5e;border-radius:16px;padding:12px 14px;font-size:1rem;line-height:1.5;color:#fff;}
 .warn b{color:#ff7a92;font-weight:800;}
+.tips{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tip{background:linear-gradient(180deg,#1b2b47,#121f35);border:1.5px solid #2c4166;border-radius:14px;padding:16px 8px;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:inset 0 1px 0 #ffffff14;}
+.tip b{font-size:1.2rem;line-height:1.25;font-weight:800;text-align:right;}
+.tipIc{display:grid;place-items:center;}
+.tipBolt{display:grid;place-items:center;margin-left:1px;}
 .warn .wtxt{flex:1;display:flex;flex-direction:column;gap:4px;}
 .warn .wbig{font-size:1.18rem;line-height:1.3;color:#ff4d6a;}
 .warn .wend{font-size:1.1rem;line-height:1.3;color:#ff4d6a;}
@@ -54,6 +63,7 @@ h1{font-family:var(--body);font-weight:800;font-size:3.3rem;margin:0;line-height
 .chip{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.85rem;color:#1b1430;flex:none;}
 .chip.tri{border-radius:0;background:none!important;width:28px;font-size:1.3rem;}
 .go{font-family:var(--body);font-weight:800;font-size:1.7rem;background:linear-gradient(180deg,#a2fbe9,#55e2c6 55%,#3fd2b5);color:#062a24;border:0;border-radius:22px;padding:18px 14px;cursor:pointer;box-shadow:0 6px 0 #1f9a83,0 10px 22px #3fe0c240,inset 0 2px 0 #ffffff80;}
+.go.wait{opacity:.45;}
 .go:active{transform:translateY(4px);box-shadow:0 2px 0 #1f9a83,inset 0 2px 0 #ffffff80;}
 .go:focus-visible,#pause:focus-visible,#mute:focus-visible,.ghost:focus-visible,#saveBtn:focus-visible{outline:3px solid var(--pill);outline-offset:3px;}
 .hint{font-size:.9rem;color:#a9b6cc;line-height:1.45;}
@@ -72,6 +82,10 @@ h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:0;}
 #saveWrap{display:flex;flex-direction:column;gap:8px;}
 #saveRow{display:flex;gap:8px;}
 #saveTitle:empty,#lbHint:empty{display:none;}
+#saveTitle{font-size:1.05rem;font-weight:700;color:var(--teal);line-height:1.45;}
+#overTitle{font-size:1.25rem;font-weight:800;color:var(--teal);line-height:1.3;margin-top:-6px;}
+#saveRow[hidden]+#nameHint{display:none;}
+#nameHint{font-size:.82rem;margin-top:-2px;}
 #nameIn{flex:1;min-width:0;font:inherit;font-size:1rem;padding:11px 12px;border-radius:12px;border:1.5px solid #ffffff33;background:#ffffff10;color:var(--ink);text-align:right;user-select:text;-webkit-user-select:text;}
 #saveBtn{font-family:var(--body);font-weight:800;background:var(--teal);color:#06302a;border:0;border-radius:12px;padding:0 16px;cursor:pointer;}
 #saveBtn:disabled{opacity:.35;cursor:default;}
@@ -124,13 +138,13 @@ h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:0;}
   <div id="hud" hidden>
     <div>
       <div class="score" id="score">0 מ"ג</div>
-      <div class="sub" id="best">שיא: 0 מ"ג</div>
+      <div class="sub" id="best">השיא שלי: 0 מ"ג</div>
     </div>
     <div style="display:flex;gap:10px;align-items:center">
       <div class="lives" id="lives">❤️❤️❤️</div>
       
       <button id="mute" aria-label="צליל">🔊</button>
-      <button id="pause" aria-label="השהה">II</button>
+      <button id="pause" aria-label="השהה"><svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true"><rect x="3.5" y="2.5" width="5" height="15" rx="1.5" fill="currentColor"/><rect x="11.5" y="2.5" width="5" height="15" rx="1.5" fill="currentColor"/></svg></button>
     </div>
   </div>
 
@@ -145,8 +159,10 @@ h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:0;}
           <div><span class="cap big" style="--c:var(--ster)"></span><span>סטרואידים</span><b style="--c:#ffc93c">15 מ"ג</b></div>
         </div>
       </div>
-      <div class="rxrow"><span class="chip" style="background:var(--rx)">📋</span><div><b>חידוש מרשמים</b> • בונוס כמה שניות של גשם כדורים בלי פרכוסים.</div></div>
-      <div class="warn" role="note"><span class="bolt" aria-hidden="true"><svg viewBox="0 0 48 48" width="44" height="44"><defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a86"/><stop offset=".55" stop-color="#ff2d43"/><stop offset="1" stop-color="#c40f25"/></linearGradient></defs><polygon points="28,4 13,26.4 23,26.4 18,44 36,20.4 25.6,20.4 33,4" fill="url(#bg1)" stroke="#8a0016" stroke-width="2" stroke-linejoin="round"/><polygon points="28,6.8 18,24 20.8,24 30,6.8" fill="#ffffff66"/></svg></span><div class="wtxt"><b class="wbig">להיזהר מפרכוסים!</b><span>ברק אדום מוריד 15 מ״ג ולב.</span><b class="wend">3 פרכוסים = פסילה.</b></div></div>
+      <div class="tips">
+        <div class="tip"><span class="tipIc" aria-hidden="true"><svg viewBox="0 0 36 44" width="36" height="44"><rect x="1" y="4" width="34" height="39" rx="4" fill="#d9894a" stroke="#a85f2a" stroke-width="1.5"/><rect x="5" y="9" width="26" height="31" rx="1.5" fill="#fbfbf7"/><rect x="11" y="1" width="14" height="8" rx="2.5" fill="#9fb4c4" stroke="#6f8696" stroke-width="1.2"/><circle cx="18" cy="4" r="1.6" fill="#6f8696"/><g stroke="#9aa6b2" stroke-width="1.6" stroke-linecap="round"><line x1="9" y1="15" x2="27" y2="15"/><line x1="9" y1="20" x2="27" y2="20"/><line x1="9" y1="25" x2="27" y2="25"/><line x1="9" y1="30" x2="27" y2="30"/></g><line x1="9" y1="35" x2="19" y2="35" stroke="#2fc9a8" stroke-width="1.6" stroke-linecap="round"/></svg></span><b style="color:#3fe6c4">חידוש<br>מרשמים</b></div>
+        <div class="tip"><span class="tipBolt" aria-hidden="true"><svg viewBox="11.5 2.5 26 43" width="27" height="45"><defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a86"/><stop offset=".55" stop-color="#ff2d43"/><stop offset="1" stop-color="#c40f25"/></linearGradient></defs><polygon points="28,4 13,26.4 23,26.4 18,44 36,20.4 25.6,20.4 33,4" fill="url(#bg1)" stroke="#8a0016" stroke-width="2" stroke-linejoin="round"/><polygon points="28,6.8 18,24 20.8,24 30,6.8" fill="#ffffff66"/></svg></span><b style="color:#ff4d6a">זהירות<br>מפרכוסים</b></div>
+      </div>
       <button class="go" id="startBtn">יאללה כדורים</button>
       <button class="ghost" data-board>🏆 טבלת שיאים</button>
       <div class="hint" id="meLine"></div>
@@ -156,18 +172,28 @@ h3{font-size:.95rem;font-weight:600;color:var(--ink);margin:0;}
 
   <div class="overlay" id="over" hidden>
     <div class="card">
-      <h1 id="overTitle" hidden></h1>
       <div class="big" id="final">0 מ"ג</div>
-      <p class="tag" id="overMsg" style="font-size:1.35rem;font-weight:800;color:#ffe08a;line-height:1.35;margin:6px 0 14px;text-shadow:0 2px 10px rgba(0,0,0,.5)"></p>
+      <div id="overTitle" hidden></div>
+      <p class="tag" id="overMsg" style="font-size:1.35rem;font-weight:800;color:#ffe08a;line-height:1.35;margin:0;text-shadow:0 2px 10px rgba(0,0,0,.5)"></p>
       <div id="saveWrap" hidden>
         <h3 id="saveTitle"></h3>
         <div id="saveRow">
           <input id="nameIn" maxlength="14" placeholder="בחר שם שיופיע בטבלת השיאים!" autocomplete="nickname">
           <button id="saveBtn">שמור</button>
         </div>
+        <div class="hint" id="nameHint">בלי שם, הניקוד לא יישמר בטבלת השיאים.</div>
       </div>
-      <button class="go" id="againBtn">עוד סיבוב</button>
-      <button class="ghost" data-board>🏆 טבלת שיאים</button>
+      <button class="go" id="againBtn">עוד כדורים!</button>
+      <button class="ghost" data-board id="overBoard" hidden>🏆 טבלת שיאים</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="pauseMenu" hidden>
+    <div class="card">
+      <h2>הפסקה</h2>
+      <button class="go" id="resumeBtn">▶ להמשיך</button>
+      <button class="ghost" id="restartBtn">↻ להתחיל מחדש</button>
+      <div class="hint">הסיבוב הזה לא יישמר.</div>
     </div>
   </div>
 
@@ -273,10 +299,13 @@ const SND={
   rx(){[659,880,1319].forEach((f,i)=>bell(f,i*.09,.45,.4))},
   over(){[523,440,349,262].forEach((f,i)=>note(f,i*.16,.4,'triangle',.3))}
 };
-function setMute(m){muted=m;$('mute').textContent=m?'🔇':'🔊';try{localStorage.setItem('mnMute',m?'1':'0')}catch(e){}if(master)master.gain.value=m?0:0.32;}
+const SPK='<path d="M3 8h3.5L11 4v12l-4.5-4H3z" fill="currentColor"/>';
+const SPK_ON='<svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">'+SPK+'<path d="M13.5 7.2a4 4 0 0 1 0 5.6M15.8 5a7 7 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>';
+const SPK_OFF='<svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">'+SPK+'<path d="M13.5 7.5l5 5M18.5 7.5l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function setMute(m){muted=m;$('mute').innerHTML=m?SPK_OFF:SPK_ON;try{localStorage.setItem('mnMute',m?'1':'0')}catch(e){}if(master)master.gain.value=m?0:0.32;}
 $('mute').onclick=()=>{initAudio();setMute(!muted)};setMute(muted);
 
-function updHud(){$('score').textContent=fmt(S.score);$('best').textContent='שיא: '+fmt(Math.max(best,S.score));$('lives').textContent='❤️'.repeat(Math.max(0,S.lives))+'🖤'.repeat(3-Math.max(0,S.lives));}
+function updHud(){$('score').textContent=fmt(S.score);$('best').textContent='השיא שלי: '+fmt(Math.max(best,S.score));{const el=$('lives'),k=Math.max(0,S.lives);el.textContent='';for(let i=0;i<3;i++){const h=document.createElement('span');h.textContent='❤️';if(i>=k)h.className='lost';el.append(h);}}}
 
 // ---- input ----
 let keys={};
@@ -369,7 +398,7 @@ function end(){S.run=false;SND.over();const nb=S.score>best;if(nb){best=S.score;
   $('overTitle').textContent=nb?'שיא חדש!':'';$('overTitle').hidden=!nb;
   const s=S.score;$('overMsg').textContent=nb&&s>0?'הרוקחת כבר מכירה אותך בשם.':s<150?'שלושה פרכוסים. מחר מתחילים מחדש.':s<500?'מנה יפה. אל תשכח לשתות מים.':s<1000?'האחות אומרת שאתה מטופל מצטיין.':s<1750?'מינון מכובד. הרוקחת מתחילה לחשוד.':s<2500?'קופת החולים פתחה עליך תיק.':s<3250?'אתה כבר יותר בית מרקחת מבן אדם.':s<4000?'חברות התרופות שולחות לך ברכה ליום ההולדת.':'משרד הבריאות מבקש לדבר איתך.';
   pendingScore=S.score;savedIdx=-1;
-  $('saveWrap').hidden=!(S.score>0);$('saveTitle').hidden=false;
+  $('saveWrap').hidden=!(S.score>0);$('saveTitle').hidden=false;$('overBoard').hidden=!MYNAME;
   $('hud').hidden=true;$('over').hidden=false;
   sendRound();
   if(S.score>0)afterRound();}
@@ -389,9 +418,12 @@ let myBest=+store.get('mnMyBest')||0;
 let pendingScore=0,savedIdx=-1,boardBack='start',online=null,loading=null;
 const norm=n=>n.trim().toLowerCase();
 function bestPerName(rows){const m=new Map();for(const r of rows){const k=norm(r.n);if(!m.has(k)||m.get(k).s<r.s)m.set(k,r);}return[...m.values()].sort((a,b)=>b.s-a.s);}
+// a named player's personal best follows the shared table, so a deleted record resets it on this phone too
+function syncMine(){if(!MYNAME||!online)return;const r=online.find(x=>norm(x.n)===norm(MYNAME)),v=r?r.s:0;
+  if(v!==myBest||v!==best){myBest=v;best=v;store.set('mnMyBest',v);store.set('mnBest',v);updHud();showMe();}}
 function loadOnline(){
   loading=fetch(SB_URL+'/rest/v1/scores?select=name,score&order=score.desc&limit=500',{headers:{apikey:SB_KEY}})
-    .then(r=>r.ok?r.json():Promise.reject(r.status)).then(rows=>{online=bestPerName(rows.map(r=>({n:r.name,s:r.score})));return online;})
+    .then(r=>r.ok?r.json():Promise.reject(r.status)).then(rows=>{online=bestPerName(rows.map(r=>({n:r.name,s:r.score})));syncMine();return online;})
     .catch(()=>{online=null;return null;}).finally(()=>{loading=null;});
   return loading;}
 // resolves 'ok' | 'taken' | 'fail'
@@ -400,39 +432,44 @@ async function postOnline(n,s){
     if(r.ok)return'ok';const t=await r.text();return t.includes('name_taken')?'taken':'fail';}catch(e){return'fail';}}
 loadOnline();
 function board(){return online||LB.board;}
-function showMe(){$('meLine').textContent=MYNAME?'משחק בתור '+MYNAME+(myBest?' · השיא שלך '+fmt(myBest):''):'';}
+function showMe(){markAgain();$('overBoard').hidden=!MYNAME;$('meLine').textContent=MYNAME?'משחק בתור '+MYNAME+(myBest?' · השיא שלך '+fmt(myBest):''):'';}
 function rememberLocal(n,s){let rec=LB.board.find(r=>norm(r.n)===norm(n));
   if(rec){if(s>rec.s){rec.s=s;rec.d=Date.now();}}else LB.board.push({n,s,d:Date.now()});
   LB.board.sort((a,b)=>b.s-a.s);LB.board=LB.board.slice(0,10);saveLB();}
 async function placeLine(n,s){await loadOnline();const list=board();savedIdx=list.findIndex(r=>norm(r.n)===norm(n)&&r.s===s);
-  return savedIdx>=0&&savedIdx<10?' מקום '+(savedIdx+1)+' בטבלה 🏆':' עוד לא בטופ 10';}
+  return savedIdx>=0&&savedIdx<10?'נשמר בטבלה · מקום '+(savedIdx+1)+' 🏆':'נשמר בטבלה · עוד לא בטופ 10';}
 // end of a round: first time asks for the permanent name; afterwards saves personal bests automatically
 async function afterRound(){
   const s=pendingScore;
   if(!MYNAME){$('saveRow').hidden=false;$('nameIn').value=LB.name||'';checkName();return;}
   $('saveRow').hidden=true;
-  if(s<=myBest){$('saveTitle').textContent='השיא של '+MYNAME+' הוא '+fmt(myBest)+'. לא עברת אותו הפעם';pendingScore=0;return;}
-  $('saveTitle').textContent='שיא אישי חדש! שומר...';pendingScore=0;
+  if(s<=myBest){$('saveTitle').textContent='השיא שלך: '+fmt(myBest);pendingScore=0;return;}
+  $('saveTitle').textContent='שומר בטבלה...';pendingScore=0;
   const res=await postOnline(MYNAME,s);
   if(res==='taken'){MYNAME='';store.set('mgName','');pendingScore=s;$('saveRow').hidden=false;$('nameIn').value='';$('saveBtn').disabled=true;$('saveTitle').textContent='השם שבחרת נתפס בינתיים על ידי שחקן אחר. בחר שם חדש';showMe();return;}
-  if(res==='ok'){myBest=s;store.set('mnMyBest',s);rememberLocal(MYNAME,s);$('saveTitle').textContent='שיא אישי חדש ל'+MYNAME+'! נשמר.'+await placeLine(MYNAME,s);SND.rx();}
-  else{rememberLocal(MYNAME,s);$('saveTitle').textContent='אין חיבור לטבלה כרגע. השיא נשמר רק בפלאפון הזה';}
+  if(res==='ok'){myBest=s;store.set('mnMyBest',s);rememberLocal(MYNAME,s);$('saveTitle').textContent=await placeLine(MYNAME,s);SND.rx();}
+  else{rememberLocal(MYNAME,s);$('saveTitle').textContent='אין חיבור כרגע · נשמר רק בטלפון הזה';}
   showMe();
 }
 function checkName(){
   if($('saveRow').hidden)return;
   const n=($('nameIn').value||'').trim();
-  $('saveBtn').disabled=!n;
+  $('saveBtn').disabled=!HASLETTER.test(n);
   $('saveTitle').textContent='';
+  markAgain();
 }
+// a name needs at least one letter; a round left unnamed simply stays out of the table
+const HASLETTER=/\p{L}/u;
+function needName(){return !MYNAME&&pendingScore>0&&!$('saveWrap').hidden&&!$('saveRow').hidden;}
+function markAgain(){}
 async function saveScore(){
-  const n=($('nameIn').value||'').trim().slice(0,14);if(!n||!pendingScore)return;
+  const n=($('nameIn').value||'').trim().slice(0,14);if(!HASLETTER.test(n)||!pendingScore)return;
   const s=pendingScore;$('saveBtn').disabled=true;$('saveTitle').textContent='שומר...';
   const res=await postOnline(n,s);
   if(res==='taken'){$('saveBtn').disabled=false;$('saveTitle').textContent='השם "'+n+'" כבר תפוס על ידי שחקן אחר. בחר שם אחר';$('nameIn').focus();return;}
   pendingScore=0;MYNAME=n;store.set('mgName',n);LB.name=n;rememberLocal(n,s);$('saveRow').hidden=true;
-  if(res==='ok'){myBest=s;store.set('mnMyBest',s);$('saveTitle').textContent='נעים מאוד, '+n+'!'+await placeLine(n,s);SND.rx();}
-  else $('saveTitle').textContent='השם '+n+' נשמר בפלאפון. אין חיבור לטבלה כרגע, השיא הבא שלך יישלח אליה';
+  if(res==='ok'){myBest=s;store.set('mnMyBest',s);$('saveTitle').textContent='נעים מאוד, '+n+'! '+await placeLine(n,s);SND.rx();}
+  else $('saveTitle').textContent='נעים מאוד, '+n+'! אין חיבור כרגע · השיא הבא יישלח לטבלה';
   showMe();
 }
 async function renderBoard(){
@@ -514,7 +551,7 @@ function twoTap(btn,label,sure,act){btn.textContent=label;btn.onclick=async()=>{
   clearTimeout(btn._t);btn.classList.remove('sure');btn.textContent='מוחק...';await act();btn.textContent=label;};}
 twoTap($('delScores'),'מחק את כל טבלת השיאים','בטוח? לחץ שוב למחיקת כל השיאים',async()=>{const r=await adminCall('admin_clear',{what:'scores'});
   $('adMsg').textContent=r.err?(r.err==='bad'?'הסיסמה לא עברה.':'אין חיבור. לא נמחק.'):'טבלת השיאים נמחקה.';if(!r.err){online=null;loadOnline();}});
-$('resetMe').onclick=()=>{MYNAME='';myBest=0;store.set('mgName','');store.set('mnMyBest','0');LB.name='';saveLB();showMe();$('adMsg').textContent='השם נמחק מהטלפון הזה. בסוף הסיבוב הבא תתבקש לבחור שם.';};
+$('resetMe').onclick=()=>{MYNAME='';myBest=0;best=0;store.set('mgName','');store.set('mnMyBest','0');store.set('mnBest','0');updHud();LB.name='';saveLB();showMe();$('adMsg').textContent='השם והשיא האישי נמחקו מהטלפון הזה. בסוף הסיבוב הבא תתבקש לבחור שם.';};
 twoTap($('delRounds'),'מחק את נתוני השחקנים (זמנים ופרכוסים)','בטוח? לחץ שוב למחיקת כל הנתונים',async()=>{const r=await adminCall('admin_clear',{what:'rounds'});
   $('adMsg').textContent=r.err?(r.err==='bad'?'הסיסמה לא עברה.':'אין חיבור. לא נמחק.'):'נתוני השחקנים נמחקו.';});
 const mmss=x=>{x=Math.round(x||0);return Math.floor(x/60)+':'+String(x%60).padStart(2,'0')};
@@ -583,10 +620,15 @@ async function loadPlayers(){$('plSum').textContent='טוען...';$('plList').te
 {let taps=0,tm=0;document.querySelector('#start h1').addEventListener('click',()=>{clearTimeout(tm);tm=setTimeout(()=>taps=0,2500);
   if(++taps>=5){taps=0;openAdmin();}});}
 
-function togglePause(){if(!S.run)return;S.paused=!S.paused;$('pause').textContent=S.paused?'▶':'II';last=performance.now();}
+// pause opens a small menu: carry on, or abandon this round (not saved) and start a fresh one
+function openPause(){if(!S.run)return;S.paused=true;$('pauseMenu').hidden=false;}
+function resume(){if(!S.run)return;S.paused=false;$('pauseMenu').hidden=true;last=performance.now();}
+function togglePause(){if(S.paused)resume();else openPause();}
 $('pause').onclick=togglePause;
+$('resumeBtn').onclick=resume;
+$('restartBtn').onclick=()=>{$('pauseMenu').hidden=true;begin();};
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.run&&!S.paused)togglePause()});
-function begin(){initAudio();loadTune();$('admin').hidden=true;
+function begin(){initAudio();loadTune();$('admin').hidden=true;$('pauseMenu').hidden=true;
   $('start').hidden=true;$('over').hidden=true;$('board').hidden=true;$('hud').hidden=false;reset();}
 $('startBtn').onclick=begin;$('againBtn').onclick=begin;showMe();
 
@@ -730,7 +772,7 @@ function draw(t){
     ctx.font=`400 ${28*U}px "Secular One", sans-serif`;ctx.fillStyle='#0008';ctx.fillText('חידוש מרשמים',W/2+2,by-10*U+2);
     ctx.fillStyle='#d8fff7';ctx.fillText('חידוש מרשמים',W/2,by-10*U);
   }
-  if(S.paused){ctx.fillStyle='#151310aa';ctx.fillRect(0,0,W,H);ctx.fillStyle='#f6f2ea';ctx.font=`400 ${36*U}px "Secular One", sans-serif`;ctx.fillText('הפסקה',W/2,H/2)}
+  
   ctx.restore();
 }
 
